@@ -227,6 +227,8 @@ class TelegramBotManager(LocaleMixin):
                                                           "Full message is sent as attachment."))
             return msg
         else:
+            if (len(prefix)) > 0:
+                prefix = "<b>" + prefix + "</b>"
             kwargs['text'] = prefix + text + suffix
             return self._bot_send_message_fallback(*args, **kwargs)
 
