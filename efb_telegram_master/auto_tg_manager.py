@@ -2,6 +2,7 @@
 import io
 from typing import Tuple, Optional, TYPE_CHECKING, List, IO, Union
 import asyncio
+import threading
 import logging
 
 import ehforwarderbot
@@ -27,6 +28,9 @@ class AutoTGManager(LocaleMixin):
     Used to automatically create new telegram group.
     """
 
+    def add_task(self, awaitable):
+        return asyncio.run_coroutine_threadsafe(awaitable, self.tg_loop)
+
     def __init__(self, channel: 'TelegramChannel'):
         self.channel: 'TelegramChannel' = channel
         self.bot: 'TelegramBotManager' = self.channel.bot_manager
@@ -38,13 +42,17 @@ class AutoTGManager(LocaleMixin):
         if self.tg_config.get('auto_manage_tg') and \
                 self.tg_config.get('tg_api_id') and \
                 self.tg_config.get('tg_api_hash'):
-            self.tg_client = pyrogram.Client(name='efb_telegram_auto_create_group_client',
-                                             api_id=self.tg_config.get('tg_api_id'),
-                                             api_hash=self.tg_config.get('tg_api_hash'),
-                                             workdir=ehforwarderbot.utils.get_data_path(channel.channel_id))
+            async def _init_client():
+                self.tg_client = pyrogram.Client(name='efb_telegram_auto_create_group_client',
+                                                 api_id=self.tg_config.get('tg_api_id'),
+                                                 api_hash=self.tg_config.get('tg_api_hash'),
+                                                 workdir=ehforwarderbot.utils.get_data_path(channel.channel_id))
+
+            
             self.tg_loop = asyncio.new_event_loop()
-            self.tg_loop.run_until_complete(self._start_tg_client_if_needed())
-            # self.tg_loop.run_until_complete(self._stop_tg_client())
+            threading.Thread(target=self.tg_loop.run_forever, daemon=True).start()
+            self.add_task(_init_client())
+            self.add_task(self._start_tg_client_if_needed())
 
     def create_tg_group_if_needed(self, chat: ETMChatType) -> Optional[utils.EFBChannelChatIDStr]:
         if not self.tg_client:
@@ -62,14 +70,19 @@ class AutoTGManager(LocaleMixin):
             else:
                 self.logger.debug('could not find TG group with mq_auto_link_group_id')
         elif self._array_config_contains_chat_type('auto_create_tg_group', chat):
-            # 自动创建 TG 群
-            return self._create_tg_group(chat)
+            try:
+                return self.add_task(self._create_tg_group(chat)).result(30)
+            except TimeoutError:
+                self.logger.exception('took too long to create group, cancelling...')
+                future.cancel()
+            except Exception as exc:
+                self.logger.exception(f'an exception raised while creating group: {exc!r}')
         else:
             return None
 
-    def _create_tg_group(self, chat: ETMChatType) -> utils.EFBChannelChatIDStr:
+    async def _create_tg_group(self, chat: ETMChatType) -> utils.EFBChannelChatIDStr:
         try:
-            tg_chat = self.tg_loop.run_until_complete(self._async_create_tg_group(chat))
+            tg_chat = await self._async_create_tg_group(chat)
             if not tg_chat:
                 return None
             self.logger.debug("Auto create telegram Group Named: [%s]", tg_chat.title)
@@ -120,8 +133,8 @@ class AutoTGManager(LocaleMixin):
     async def _async_create_tg_group(self, chat: ETMChatType) -> Optional[pyrogram.types.Chat]:
         try:
             await self._start_tg_client_if_needed()
-            tg_chat = await self.tg_client.create_group(chat.chat_title, self.bot.me.id)
-            bot = await self.tg_client.resolve_peer(self.bot.me.id)
+            tg_chat = await self.tg_client.create_group(chat.chat_title, self.bot.me.username)
+            bot = await self.tg_client.resolve_peer(self.bot.me.username)
             _raw_chat = await self.tg_client.resolve_peer(tg_chat.id)
             await self.tg_client.invoke(
                 pyrogram.raw.functions.messages.EditChatAdmin(
