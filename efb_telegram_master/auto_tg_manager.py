@@ -47,7 +47,6 @@ class AutoTGManager(LocaleMixin):
                                                  api_id=self.tg_config.get('tg_api_id'),
                                                  api_hash=self.tg_config.get('tg_api_hash'),
                                                  workdir=ehforwarderbot.utils.get_data_path(channel.channel_id))
-
             
             self.tg_loop = asyncio.new_event_loop()
             threading.Thread(target=self.tg_loop.run_forever, daemon=True).start()
@@ -70,13 +69,17 @@ class AutoTGManager(LocaleMixin):
             else:
                 self.logger.debug('could not find TG group with mq_auto_link_group_id')
         elif self._array_config_contains_chat_type('auto_create_tg_group', chat):
+            future = self.add_task(self._create_tg_group(chat))
             try:
-                return self.add_task(self._create_tg_group(chat)).result(30)
+                ret = future.result()
             except TimeoutError:
                 self.logger.exception('took too long to create group, cancelling...')
                 future.cancel()
+                return None
             except Exception as exc:
                 self.logger.exception(f'an exception raised while creating group: {exc!r}')
+                return None
+            return ret
         else:
             return None
 
