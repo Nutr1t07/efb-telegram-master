@@ -199,8 +199,8 @@ class TelegramBotManager(LocaleMixin):
         prefix = (prefix and (prefix + "\n")) or prefix
         suffix = (suffix and ("\n" + suffix)) or suffix
         if str(kwargs.get('parse_mode', '')).lower() == "html":
-            prefix = html.escape(prefix)
-            suffix = html.escape(suffix)
+            prefix = (prefix and "<b>" + html.escape(prefix) + "</b>") or prefix
+            suffix = (suffix and "<b>" + html.escape(suffix) + "</b>") or suffix
         text: str
         if args[1:]:
             text = args[1]
@@ -227,8 +227,6 @@ class TelegramBotManager(LocaleMixin):
                                                           "Full message is sent as attachment."))
             return msg
         else:
-            if (len(prefix)) > 0:
-                prefix = "<b>" + prefix + "</b>"
             kwargs['text'] = prefix + text + suffix
             return self._bot_send_message_fallback(*args, **kwargs)
 

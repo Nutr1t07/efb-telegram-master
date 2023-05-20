@@ -37,6 +37,7 @@ class AutoTGManager(LocaleMixin):
         self.logger: logging.Logger = logging.getLogger(__name__)
         self.flag: utils.ExperimentalFlagsManager = self.channel.flag
         self.db: 'DatabaseManager' = channel.db
+        self.tg_client = None
 
         self.tg_config: dict = self.flag('auto_manage_tg_config')
         if self.tg_config.get('auto_manage_tg') and \
@@ -47,11 +48,10 @@ class AutoTGManager(LocaleMixin):
                                                  api_id=self.tg_config.get('tg_api_id'),
                                                  api_hash=self.tg_config.get('tg_api_hash'),
                                                  workdir=ehforwarderbot.utils.get_data_path(channel.channel_id))
-            
+                await self._start_tg_client_if_needed()
             self.tg_loop = asyncio.new_event_loop()
             threading.Thread(target=self.tg_loop.run_forever, daemon=True).start()
             self.add_task(_init_client())
-            self.add_task(self._start_tg_client_if_needed())
 
     def create_tg_group_if_needed(self, chat: ETMChatType) -> Optional[utils.EFBChannelChatIDStr]:
         if not self.tg_client:
