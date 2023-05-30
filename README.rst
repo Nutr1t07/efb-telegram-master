@@ -608,6 +608,12 @@ These flags can be enabled in the ``flags.auto_manage_tg_config`` key of the con
 -   ``auto_mute_created_tg_group`` *(list[ChatType])*
     After AutoTGManager creates TG group, it can mute the group for you if you specify the type in this list.
 
+-   ``auto_unmute_created_tg_group`` *(list[ChatType])*
+    After AutoTGManager creates TG group, it can unmute the group for you if you specify the type in this list.
+
+-   ``auto_update_chat_image`` *(bool)* [Default: ``false``]
+    Enable this option if you want to update chat image automatically.
+
 -   ``auto_add_group_to_folder`` *(dict[ChatType, str])*
     This dict contains names of your TG folder.
     After AutoTGManager creates TG group, it can add the group to the folder if you specify the type in this list.
@@ -634,12 +640,16 @@ Config Example:
         auto_create_tg_group: [1, 2]
         # automatically mute TG groups for group chat
         auto_mute_created_tg_group: [2]
+        # automatically unmute TG groups for group chat
+        auto_unmute_created_tg_group: [1]
+        # automatically update chat image
+        auto_update_chat_image: true
         # automatically add those TG groups to those folders
         auto_add_group_to_folder:
-          1: 微信
-          2: 微信-群
-          3: 微信-系统
-          4: 微信-公众号
+          1: Private
+          2: Group
+          3: System
+          4: MQ
         # automatically archive TG groups for group and system and MQ chat
         auto_archive_create_tg_group: [2, 3, 4]
         # automatically link MQ chat to this TG group

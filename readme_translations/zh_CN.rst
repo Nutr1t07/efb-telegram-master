@@ -573,6 +573,10 @@ ChatType:
 
     ChatType的数组，AutoTGManager 会将对应类型自动创建的 TG 群禁止通知
 
+-   ``auto_unmute_created_tg_group`` *(list[ChatType])*
+
+    ChatType的数组，AutoTGManager 会将对应类型自动创建的 TG 群启用通知
+
 -   ``auto_add_group_to_folder`` *(dict[ChatType, str])*
 
     [ChatType: 分组名称]，AutoTGManager 会将对应类型自动创建的 TG 群加入到对应分组中。（需要先手动创建对应分组）
@@ -599,14 +603,18 @@ ChatType:
         tg_api_hash: xxxxxxxxxxxxxxxxxxxxxxxxx
         # 为私聊、群聊类型自动创建 TG 群
         auto_create_tg_group: [1, 2]
-        # 自动创建的群聊类型的 TG 群，默认禁止通知
+        # 自动禁用通知
         auto_mute_created_tg_group: [2]
+        # 自动启用通知
+        auto_unmute_created_tg_group: [1]
+        # 自动更新群头像
+        auto_update_chat_image: true
         # 自动将对应类型加入到对应 TG 分组
         auto_add_group_to_folder:
-          1: 微信
-          2: 微信-群
-          3: 微信-系统
-          4: 微信-公众号
+          1: 私信
+          2: 群聊
+          3: 系统
+          4: 公众号
         # 将群聊、系统消息、公众号，自动创建的 TG 群归档
         auto_archive_create_tg_group: [2, 3, 4]
         # 自动将公众号绑定到该 TG 群

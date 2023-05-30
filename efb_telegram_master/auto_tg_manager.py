@@ -90,7 +90,7 @@ class AutoTGManager(LocaleMixin):
                 return None
             self.logger.debug("Auto create telegram Group Named: [%s]", tg_chat.title)
             chat.link(self.channel.channel_id, tg_chat.id, True)
-            self._update_chat_image(tg_chat)
+            self._update_tg_chat_image_if_needed(tg_chat)
             tg_chats = self.db.get_chat_assoc(slave_uid=utils.chat_id_to_str(chat=chat))
             assert len(tg_chats) == 1
             return tg_chats[0]
@@ -147,6 +147,7 @@ class AutoTGManager(LocaleMixin):
             await self._add_tg_group_to_folder_if_needed(chat, tg_chat)
             await self._archive_tg_chat_if_needed(chat, tg_chat)
             await self._mute_tg_group_if_needed(chat, tg_chat)
+            await self._unmute_tg_group_if_needed(chat, tg_chat)
             # await self._stop_tg_client()
             return tg_chat
         except Exception:
@@ -195,6 +196,13 @@ class AutoTGManager(LocaleMixin):
         except Exception:
             self.logger.exception("Unknown error caught when adding TG group to folder.")
 
+    async def _update_tg_chat_image_if_needed(self, tg_chat: pyrogram.types.Chat):
+        try:
+            if self.tg_config.get('auto_update_chat_image'):
+                self._update_chat_image(tg_chat)
+        except Exception:
+            self.logger.exception("Unknown error caught when updating chat image.")
+
     async def _archive_tg_chat_if_needed(self, chat: ETMChatType, tg_chat: pyrogram.types.Chat):
         try:
             if self._array_config_contains_chat_type('auto_archive_create_tg_group', chat):
@@ -211,6 +219,16 @@ class AutoTGManager(LocaleMixin):
                     settings=pyrogram.raw.types.InputPeerNotifySettings(silent=True)))
         except Exception:
             self.logger.exception("Unknown error caught when muting TG chat.")
+
+    async def _unmute_tg_group_if_needed(self, chat: ETMChatType, tg_chat: pyrogram.types.Chat):
+        try:
+            if self._array_config_contains_chat_type('auto_unmute_created_tg_group', chat):
+                peer = await self.tg_client.resolve_peer(tg_chat.id)
+                await self.tg_client.invoke(pyrogram.raw.functions.account.UpdateNotifySettings(
+                    peer=pyrogram.raw.types.InputNotifyPeer(peer=peer),
+                    settings=pyrogram.raw.types.InputPeerNotifySettings(silent=False)))
+        except Exception:
+            self.logger.exception("Unknown error caught when unmuting TG chat.")
 
     def _array_config_contains_chat_type(self, config_name: str, chat: ETMChatType) -> bool:
         config = self.tg_config.get(config_name, [])
