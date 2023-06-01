@@ -196,7 +196,7 @@ class AutoTGManager(LocaleMixin):
         except Exception:
             self.logger.exception("Unknown error caught when adding TG group to folder.")
 
-    async def _update_tg_chat_image_if_needed(self, tg_chat: pyrogram.types.Chat):
+    def _update_tg_chat_image_if_needed(self, tg_chat: pyrogram.types.Chat):
         try:
             if self.tg_config.get('auto_update_chat_image'):
                 self._update_chat_image(tg_chat)
