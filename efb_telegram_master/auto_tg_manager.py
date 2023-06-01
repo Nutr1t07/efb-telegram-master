@@ -49,6 +49,7 @@ class AutoTGManager(LocaleMixin):
                                                  api_hash=self.tg_config.get('tg_api_hash'),
                                                  workdir=ehforwarderbot.utils.get_data_path(channel.channel_id))
                 await self._start_tg_client_if_needed()
+                await self._stop_tg_client()
             self.tg_loop = asyncio.new_event_loop()
             threading.Thread(target=self.tg_loop.run_forever, daemon=True).start()
             self.add_task(_init_client())
@@ -148,7 +149,7 @@ class AutoTGManager(LocaleMixin):
             await self._archive_tg_chat_if_needed(chat, tg_chat)
             await self._mute_tg_group_if_needed(chat, tg_chat)
             await self._unmute_tg_group_if_needed(chat, tg_chat)
-            # await self._stop_tg_client()
+            await self._stop_tg_client()
             return tg_chat
         except Exception:
             self.logger.exception("Unknown error caught when creating TG group.")
